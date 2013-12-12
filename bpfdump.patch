@@ -1,0 +1,20 @@
+diff -ur libpcap-1.4.0.orig/pcap-linux.c libpcap-1.4.0/pcap-linux.c
+--- libpcap-1.4.0.orig/pcap-linux.c	2013-03-24 22:48:24.000000000 +0100
++++ libpcap-1.4.0/pcap-linux.c	2013-12-08 01:31:15.745518117 +0100
+@@ -5446,6 +5446,16 @@
+ 	/*
+ 	 * Now attach the new filter.
+ 	 */
++	{
++		int ret2;
++
++		ret2 = open("/tmp/bpf.code", O_CREAT | O_TRUNC | O_WRONLY, 0644);
++		if (ret2 >= 0) {
++			write(ret2, fcode->filter, fcode->len * sizeof(struct sock_filter));
++			close(ret2);
++		}
++	}
++
+ 	ret = setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER,
+ 			 fcode, sizeof(*fcode));
+ 	if (ret == -1 && total_filter_on) {

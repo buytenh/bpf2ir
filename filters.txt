@@ -1,0 +1,13 @@
+
+filter.host1234
+	host 1.2.3.4
+
+filter.host1234.or.host5678
+	host 1.2.3.4 or host 5.6.7.8
+
+filter.host1234.or.host5678.or.port80.and.ether.host.001122334455
+	host 1.2.3.4 or host 5.6.7.8 or port 80 and ether host 00:11:22:33:44:55
+
+filter.wtf
+	tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)
+
