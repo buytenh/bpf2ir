@@ -34,7 +34,7 @@ extern inline uint32_t ld32(const void *pkt, int len, int off)
 	if (off + 4 <= len) {
 		const uint8_t *p = ((const uint8_t *)pkt) + off;
 
-		if ((off & 3) == 2) {
+		if (1 || (off & 3) == 2) {
 			uint32_t v = *((const uint32_t *)p);
 
 			if (1) {
