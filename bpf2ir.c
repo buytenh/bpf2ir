@@ -258,18 +258,16 @@ static struct insn prog[N];
 static struct insn_info pinfo[N];
 static int ssavar;
 
-#if 0
 static void print_insns(void)
 {
 	int i;
 
 	for (i = 0; i < insns; i++) {
-		printf("%d:\t", i);
+		printf("; %d:\t", i);
 		print_insn(i, &prog[i]);
 	}
 	printf("\n");
 }
-#endif
 
 static void jump_count_incoming(int from, int rel)
 {
@@ -997,7 +995,7 @@ int main()
 
 	insns = ret / sizeof(prog[0]);
 
-//	print_insns();
+	print_insns();
 
 	count_jumps();
 	assign_basic_blocks();
