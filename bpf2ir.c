@@ -30,7 +30,7 @@ struct var {
 	enum vartype	type;
 	union {
 		uint32_t	k;
-		uint32_t	index;
+		uint32_t	var32;
 	};
 };
 
@@ -403,7 +403,7 @@ static void output_var(struct var *v)
 		break;
 
 	case TYPE_SSAVAR:
-		printf("%%%d", v->index);
+		printf("%%%d", v->var32);
 		break;
 
 	default:
@@ -430,7 +430,7 @@ static int output_phi(struct insn_info *info, int var)
 			break;
 		if (fa->type == TYPE_CONSTANT && fa->k != fb->k)
 			break;
-		if (fa->type == TYPE_SSAVAR && fa->index != fb->index)
+		if (fa->type == TYPE_SSAVAR && fa->var32 != fb->var32)
 			break;
 	}
 
@@ -440,7 +440,7 @@ static int output_phi(struct insn_info *info, int var)
 	}
 
 	info->vars[var].type = TYPE_SSAVAR;
-	info->vars[var].index = ssavar;
+	info->vars[var].var32 = ssavar;
 
 	printf("\t%%%d = phi i32", ssavar);
 	for (i = 0; i < info->bb_incoming; i++) {
@@ -494,7 +494,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		printf("\t%%%d = tail call i32 @ld32(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -503,7 +503,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
 		output_zext(ssavar + 1, 32, ssavar, 16);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 1;
+		var_a->var32 = ssavar + 1;
 		ssavar += 2;
 		break;
 
@@ -512,7 +512,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
 		output_zext(ssavar + 1, 32, ssavar, 8);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 1;
+		var_a->var32 = ssavar + 1;
 		ssavar += 2;
 		break;
 
@@ -524,7 +524,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		printf("\t%%%d = tail call i32 @ld32(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 1;
+		var_a->var32 = ssavar + 1;
 
 		ssavar += 2;
 		break;
@@ -538,7 +538,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
 		output_zext(ssavar + 2, 32, ssavar + 1, 16);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 2;
+		var_a->var32 = ssavar + 2;
 
 		ssavar += 3;
 		break;
@@ -552,7 +552,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
 		output_zext(ssavar + 2, 32, ssavar + 1, 8);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 2;
+		var_a->var32 = ssavar + 2;
 
 		ssavar += 3;
 		break;
@@ -595,7 +595,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		printf("\t%%%d = shl i32 %%%d, 2\n",
 		       ssavar + 3, ssavar + 2);
 		var_x->type = TYPE_SSAVAR;
-		var_x->index = ssavar + 3;
+		var_x->var32 = ssavar + 3;
 		ssavar += 4;
 		break;
 
@@ -620,7 +620,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -629,7 +629,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -638,7 +638,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -647,7 +647,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -656,7 +656,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -665,7 +665,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -674,7 +674,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -683,7 +683,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -692,7 +692,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -701,7 +701,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -710,7 +710,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -721,7 +721,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -732,7 +732,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -743,7 +743,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -754,7 +754,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -765,7 +765,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -776,7 +776,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -787,7 +787,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -798,7 +798,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -809,7 +809,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
@@ -820,7 +820,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
+		var_a->var32 = ssavar;
 		ssavar++;
 		break;
 
