@@ -723,17 +723,22 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 	case BPF_LDX | BPF_B | BPF_MSH:
 		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
-		output_zext(ssavar + 1, 32, ssavar, 8);
-		printf("\t%%%d = and i32 %%%d, 15\n",
-		       ssavar + 2, ssavar + 1);
-		printf("\t%%%d = shl i32 %%%d, 2\n",
-		       ssavar + 3, ssavar + 2);
+		printf("\t%%%d = and i8 %%%d, 15\n", ssavar + 1, ssavar);
+		printf("\t%%%d = shl i8 %%%d, 2\n", ssavar + 2, ssavar + 1);
+
+		output_zext(ssavar + 3, 16, ssavar, 8);
+		printf("\t%%%d = and i16 %%%d, 15\n", ssavar + 4, ssavar + 3);
+		printf("\t%%%d = shl i16 %%%d, 2\n", ssavar + 5, ssavar + 4);
+
+		output_zext(ssavar + 6, 32, ssavar, 8);
+		printf("\t%%%d = and i32 %%%d, 15\n", ssavar + 7, ssavar + 6);
+		printf("\t%%%d = shl i32 %%%d, 2\n", ssavar + 8, ssavar + 7);
 
 		var_x->type = TYPE_SSAVAR;
-		var_x->var8 = -1;
-		var_x->var16 = -1;
-		var_x->var32 = ssavar + 3;
-		ssavar += 4;
+		var_x->var8 = ssavar + 2;
+		var_x->var16 = ssavar + 5;
+		var_x->var32 = ssavar + 8;
+		ssavar += 9;
 
 		break;
 
