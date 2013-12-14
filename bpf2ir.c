@@ -47,6 +47,8 @@ struct insn_info {
 
 static void print_insn(int i, struct insn *in)
 {
+	i++;
+
 	switch (in->code) {
 	case BPF_LD | BPF_IMM:
 		printf("LD\tA, %d\n", in->k);
@@ -193,39 +195,39 @@ static void print_insn(int i, struct insn *in)
 		break;
 
 	case BPF_JMP | BPF_JA:
-		printf("JA\t%d\n", i + in->k + 1);
+		printf("JA\t%d\n", i + in->k);
 		break;
 
 	case BPF_JMP | BPF_JEQ | BPF_K:
-		printf("JEQ\t0x%x, %d, %d\n", in->k, i + in->jt + 1, i + in->jf + 1);
+		printf("JEQ\t0x%x, %d, %d\n", in->k, i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_K:
-		printf("JGT\t0x%x, %d, %d\n", in->k, i + in->jt + 1, i + in->jf + 1);
+		printf("JGT\t0x%x, %d, %d\n", in->k, i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_K:
-		printf("JGE\t0x%x, %d, %d\n", in->k, i + in->jt + 1, i + in->jf + 1);
+		printf("JGE\t0x%x, %d, %d\n", in->k, i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_K:
-		printf("JSET\t0x%x, %d, %d\n", in->k, i + in->jt + 1, i + in->jf + 1);
+		printf("JSET\t0x%x, %d, %d\n", in->k, i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JEQ | BPF_X:
-		printf("JEQ\tX, %d, %d\n", i + in->jt + 1, i + in->jf + 1);
+		printf("JEQ\tX, %d, %d\n", i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_X:
-		printf("JGT\tX, %d, %d\n", i + in->jt + 1, i + in->jf + 1);
+		printf("JGT\tX, %d, %d\n", i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_X:
-		printf("JGE\tX, %d, %d\n", i + in->jt + 1, i + in->jf + 1);
+		printf("JGE\tX, %d, %d\n", i + in->jt, i + in->jf);
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_X:
-		printf("JSET\tX, %d, %d\n", i + in->jt + 1, i + in->jf + 1);
+		printf("JSET\tX, %d, %d\n", i + in->jt, i + in->jf);
 		break;
 
 	case BPF_RET | BPF_K:
