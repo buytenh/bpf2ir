@@ -593,6 +593,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 {
 	struct var *var_a = &info->vars[VAR_A];
 	struct var *var_x = &info->vars[VAR_X];
+	int temp;
 
 	switch (in->code) {
 	case BPF_LD | BPF_IMM:
@@ -1050,8 +1051,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JEQ | BPF_K:
-		printf("\t%%%d = icmp eq i32 ", ssavar);
-		output_var(var_a);
+		if ((var_width(var_a) == 8 && (in->k & 0xffffff00)) ||
+		    (var_width(var_a) == 16 && (in->k & 0xffff0000))) {
+			output_br(i, in->jf);
+			break;
+		}
+
+		printf("\t%%%d = icmp eq i%d ", ssavar, var_width(var_a));
+		output_var_width(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1061,8 +1068,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_K:
-		printf("\t%%%d = icmp ugt i32 ", ssavar);
-		output_var(var_a);
+		if ((var_width(var_a) == 8 && (in->k >= 0xff)) ||
+		    (var_width(var_a) == 16 && (in->k >= 0xffff))) {
+			output_br(i, in->jf);
+			break;
+		}
+
+		printf("\t%%%d = icmp ugt i%d ", ssavar, var_width(var_a));
+		output_var_width(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1072,8 +1085,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_K:
-		printf("\t%%%d = icmp uge i32 ", ssavar);
-		output_var(var_a);
+		if ((var_width(var_a) == 8 && (in->k >= 0x100)) ||
+		    (var_width(var_a) == 16 && (in->k >= 0x10000))) {
+			output_br(i, in->jf);
+			break;
+		}
+
+		printf("\t%%%d = icmp uge i%d ", ssavar, var_width(var_a));
+		output_var_width(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1083,12 +1102,19 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_K:
-		printf("\t%%%d = and i32 ", ssavar);
-		output_var(var_a);
+		if ((var_width(var_a) == 8 && !(in->k & 0xff)) ||
+		    (var_width(var_a) == 16 && !(in->k & 0xffff)) ||
+		    (var_width(var_a) == 32 && !in->k)) {
+			output_br(i, in->jf);
+			break;
+		}
+
+		printf("\t%%%d = and i%d ", ssavar, var_width(var_a));
+		output_var_width(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
-		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
-		       ssavar + 1, ssavar);
+		printf("\t%%%d = icmp ne i%d %%%d, 0\n",
+		       ssavar + 1, var_width(var_a), ssavar);
 
 		output_br_cond(ssavar + 1, i, in->jt, in->jf);
 
@@ -1097,10 +1123,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JEQ | BPF_X:
-		printf("\t%%%d = icmp eq i32 ", ssavar);
-		output_var(var_a);
+		temp = var_width(var_a);
+		if (var_width(var_x) > temp)
+			temp = var_width(var_x);
+
+		printf("\t%%%d = icmp eq i%d ", ssavar, temp);
+		output_var_width(var_a, temp);
 		printf(", ");
-		output_var(var_x);
+		output_var_width(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1110,10 +1140,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_X:
-		printf("\t%%%d = icmp ugt i32 ", ssavar);
-		output_var(var_a);
+		temp = var_width(var_a);
+		if (var_width(var_x) > temp)
+			temp = var_width(var_x);
+
+		printf("\t%%%d = icmp ugt i%d ", ssavar, temp);
+		output_var_width(var_a, temp);
 		printf(", ");
-		output_var(var_x);
+		output_var_width(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1123,10 +1157,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_X:
-		printf("\t%%%d = icmp uge i32 ", ssavar);
-		output_var(var_a);
+		temp = var_width(var_a);
+		if (var_width(var_x) > temp)
+			temp = var_width(var_x);
+
+		printf("\t%%%d = icmp uge i%d ", ssavar, temp);
+		output_var_width(var_a, temp);
 		printf(", ");
-		output_var(var_x);
+		output_var_width(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1136,10 +1174,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_X:
-		printf("\t%%%d = and i32 ", ssavar);
-		output_var(var_a);
+		temp = var_width(var_a);
+		if (var_width(var_x) > temp)
+			temp = var_width(var_x);
+
+		printf("\t%%%d = and i%d ", ssavar, temp);
+		output_var_width(var_a, temp);
 		printf(", ");
-		output_var(var_x);
+		output_var_width(var_x, temp);
 		printf("\n");
 
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
