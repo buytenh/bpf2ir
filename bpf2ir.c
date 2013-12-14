@@ -20,7 +20,7 @@ struct insn {
 };
 
 enum vartype {
-	TYPE_UNINITIALIZED = 0,
+	TYPE_UNDEF = 0,
 	TYPE_CONSTANT,
 	TYPE_LENGTH,
 	TYPE_SSAVAR,
@@ -394,7 +394,7 @@ static void trace_jumps(void)
 static void output_var(struct var *v)
 {
 	switch (v->type) {
-	case TYPE_UNINITIALIZED:
+	case TYPE_UNDEF:
 		printf("undef");
 		break;
 
