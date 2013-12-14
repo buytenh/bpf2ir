@@ -269,15 +269,20 @@ static void print_insns(void)
 	printf("\n");
 }
 
-static void jump_count_incoming(int from, int rel)
+static void for_jump(int from, int rel, void (*cb)(int from, int to))
 {
 	int to = from + rel + 1;
 
-	if (to < insns)
-		pinfo[to].bb_incoming++;
+	if (to >= insns) {
+		fprintf(stderr, "jump from %d to %d, while only %d insns\n",
+			from, to, insns);
+		exit(1);
+	}
+
+	cb(from, to);
 }
 
-static void count_jumps(void)
+static void foreach_jump(void (*cb)(int from, int to))
 {
 	int i;
 
@@ -286,7 +291,7 @@ static void count_jumps(void)
 
 		switch (in->code) {
 		case BPF_JMP | BPF_JA:
-			jump_count_incoming(i, in->k);
+			for_jump(i, in->k, cb);
 			break;
 
 		case BPF_JMP | BPF_JEQ | BPF_K:
@@ -297,11 +302,21 @@ static void count_jumps(void)
 		case BPF_JMP | BPF_JGT | BPF_X:
 		case BPF_JMP | BPF_JGE | BPF_X:
 		case BPF_JMP | BPF_JSET | BPF_X:
-			jump_count_incoming(i, in->jt);
-			jump_count_incoming(i, in->jf);
+			for_jump(i, in->jt, cb);
+			for_jump(i, in->jf, cb);
 			break;
 		}
 	}
+}
+
+static void jump_count_incoming(int from, int to)
+{
+	pinfo[to].bb_incoming++;
+}
+
+static void count_jumps(void)
+{
+	foreach_jump(jump_count_incoming);
 }
 
 static void assign_basic_blocks(void)
