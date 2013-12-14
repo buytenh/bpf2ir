@@ -405,6 +405,12 @@ static void output_var(struct var *v)
 	}
 }
 
+static void output_zext(int tovar, int towidth, int fromvar, int fromwidth)
+{
+	printf("\t%%%d = zext i%d %%%d to i%d\n",
+	       tovar, fromwidth, fromvar, towidth);
+}
+
 static int output_phi(struct insn_info *info, int var)
 {
 	struct var *fa = &pinfo[info->in[0]].vars[var];
@@ -482,19 +488,21 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_LD | BPF_H | BPF_ABS:
-		printf("\t%%%d = tail call i32 @ld16(i8* %%pkt, "
+		printf("\t%%%d = tail call i16 @ld16(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
+		output_zext(ssavar + 1, 32, ssavar, 16);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
-		ssavar++;
+		var_a->index = ssavar + 1;
+		ssavar += 2;
 		break;
 
 	case BPF_LD | BPF_B | BPF_ABS:
-		printf("\t%%%d = tail call i32 @ld8(i8* %%pkt, "
+		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
+		output_zext(ssavar + 1, 32, ssavar, 8);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar;
-		ssavar++;
+		var_a->index = ssavar + 1;
+		ssavar += 2;
 		break;
 
 	case BPF_LD | BPF_W | BPF_IND:
@@ -515,12 +523,13 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf(", %d\n", in->k);
 
-		printf("\t%%%d = tail call i32 @ld16(i8* %%pkt, "
+		printf("\t%%%d = tail call i16 @ld16(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
+		output_zext(ssavar + 2, 32, ssavar + 1, 16);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 1;
+		var_a->index = ssavar + 2;
 
-		ssavar += 2;
+		ssavar += 3;
 		break;
 
 	case BPF_LD | BPF_B | BPF_IND:
@@ -528,12 +537,13 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf(", %d\n", in->k);
 
-		printf("\t%%%d = tail call i32 @ld8(i8* %%pkt, "
+		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
+		output_zext(ssavar + 2, 32, ssavar + 1, 8);
 		var_a->type = TYPE_SSAVAR;
-		var_a->index = ssavar + 1;
+		var_a->index = ssavar + 2;
 
-		ssavar += 2;
+		ssavar += 3;
 		break;
 
 	case BPF_LD | BPF_MEM:
@@ -562,15 +572,16 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_LDX | BPF_B | BPF_MSH:
-		printf("\t%%%d = tail call i32 @ld8(i8* %%pkt, "
+		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
+		output_zext(ssavar + 1, 32, ssavar, 8);
 		printf("\t%%%d = and i32 %%%d, 15\n",
-		       ssavar + 1, ssavar);
-		printf("\t%%%d = shl i32 %%%d, 2\n",
 		       ssavar + 2, ssavar + 1);
+		printf("\t%%%d = shl i32 %%%d, 2\n",
+		       ssavar + 3, ssavar + 2);
 		var_x->type = TYPE_SSAVAR;
-		var_x->index = ssavar + 2;
-		ssavar += 3;
+		var_x->index = ssavar + 3;
+		ssavar += 4;
 		break;
 
 	case BPF_ST:
@@ -938,10 +949,10 @@ static void output(void)
 {
 	int i;
 
-	printf("declare i32 @ld8(i8* nocapture, i32, i32)\n");
+	printf("declare i8 @ld8(i8* nocapture, i32, i32)\n");
 	printf("\n");
 
-	printf("declare i32 @ld16(i8* nocapture, i32, i32)\n");
+	printf("declare i16 @ld16(i8* nocapture, i32, i32)\n");
 	printf("\n");
 
 	printf("declare i32 @ld32(i8* nocapture, i32, i32)\n");
