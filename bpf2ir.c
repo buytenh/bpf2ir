@@ -350,7 +350,9 @@ static void jump_log_incoming(int from, int to)
 		}
 	}
 
-	printf("error!\n");
+	fprintf(stderr, "no space left in incoming jump array for "
+			"basic block %d\n", to);
+
 	exit(1);
 }
 
@@ -365,8 +367,10 @@ static void trace_jumps(void)
 		num_incoming += pinfo[i].bb_incoming;
 
 	in = malloc(num_incoming * sizeof(*in));
-	if (in == NULL)
+	if (in == NULL) {
+		fprintf(stderr, "out of memory\n");
 		exit(1);
+	}
 
 	for (i = 0; i < num_incoming; i++)
 		in[i] = -1;
@@ -403,7 +407,7 @@ static void output_var(struct var *v)
 		break;
 
 	default:
-		printf("invalid var type!\n");
+		fprintf(stderr, "invalid var type!\n");
 		exit(1);
 	}
 }
@@ -554,8 +558,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_LD | BPF_MEM:
-		if (in->k < 0 || in->k >= BPF_MEMWORDS)
+		if (in->k < 0 || in->k >= BPF_MEMWORDS) {
+			fprintf(stderr, "invalid memory word index\n");
 			exit(1);
+		}
 		*var_a = info->vars[VAR_M0 + in->k];
 		break;
 
@@ -569,8 +575,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_LDX | BPF_W | BPF_MEM:
-		if (in->k < 0 || in->k >= BPF_MEMWORDS)
+		if (in->k < 0 || in->k >= BPF_MEMWORDS) {
+			fprintf(stderr, "invalid memory word index\n");
 			exit(1);
+		}
 		*var_x = info->vars[VAR_M0 + in->k];
 		break;
 
@@ -592,14 +600,18 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ST:
-		if (in->k < 0 || in->k >= BPF_MEMWORDS)
+		if (in->k < 0 || in->k >= BPF_MEMWORDS) {
+			fprintf(stderr, "invalid memory word index\n");
 			exit(1);
+		}
 		info->vars[VAR_M0 + in->k] = *var_a;
 		break;
 
 	case BPF_STX:
-		if (in->k < 0 || in->k >= BPF_MEMWORDS)
+		if (in->k < 0 || in->k >= BPF_MEMWORDS) {
+			fprintf(stderr, "invalid memory word index\n");
 			exit(1);
+		}
 		info->vars[VAR_M0 + in->k] = *var_x;
 		break;
 
@@ -947,7 +959,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	default:
-		printf("unknown insn %.2x\n", in->code);
+		fprintf(stderr, "unknown insn %.2x\n", in->code);
 		exit(1);
 	}
 }
