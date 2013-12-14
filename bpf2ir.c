@@ -28,7 +28,10 @@ enum vartype {
 
 struct var {
 	enum vartype	type;
-	uint32_t	index;
+	union {
+		uint32_t	k;
+		uint32_t	index;
+	};
 };
 
 enum {
@@ -388,7 +391,7 @@ static void output_var(struct var *v)
 		break;
 
 	case TYPE_CONSTANT:
-		printf("%d", v->index);
+		printf("%d", v->k);
 		break;
 
 	case TYPE_LENGTH:
@@ -419,7 +422,11 @@ static int output_phi(struct insn_info *info, int var)
 	for (i = 1; i < info->bb_incoming; i++) {
 		struct var *fb = &pinfo[info->in[i]].vars[var];
 
-		if (fa->type != fb->type || fa->index != fb->index)
+		if (fa->type != fb->type)
+			break;
+		if (fa->type == TYPE_CONSTANT && fa->k != fb->k)
+			break;
+		if (fa->type == TYPE_SSAVAR && fa->index != fb->index)
 			break;
 	}
 
@@ -476,7 +483,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 	switch (in->code) {
 	case BPF_LD | BPF_IMM:
 		var_a->type = TYPE_CONSTANT;
-		var_a->index = in->k;
+		var_a->k = in->k;
 		break;
 
 	case BPF_LD | BPF_W | BPF_ABS:
@@ -558,7 +565,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_LDX | BPF_W | BPF_IMM:
 		var_x->type = TYPE_CONSTANT;
-		var_x->index = in->k;
+		var_x->k = in->k;
 		break;
 
 	case BPF_LDX | BPF_W | BPF_MEM:
