@@ -519,7 +519,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 		var_a->type = TYPE_SSAVAR;
 		var_a->var8 = -1;
-		var_a->var16 = -1;
+		var_a->var16 = ssavar;
 		var_a->var32 = ssavar + 1;
 		ssavar += 2;
 
@@ -528,13 +528,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 	case BPF_LD | BPF_B | BPF_ABS:
 		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
-		output_zext(ssavar + 1, 32, ssavar, 8);
+		output_zext(ssavar + 1, 16, ssavar, 8);
+		output_zext(ssavar + 2, 32, ssavar, 8);
 
 		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar + 1;
-		ssavar += 2;
+		var_a->var8 = ssavar;
+		var_a->var16 = ssavar + 1;
+		var_a->var32 = ssavar + 2;
+		ssavar += 3;
 
 		break;
 
@@ -565,7 +566,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 		var_a->type = TYPE_SSAVAR;
 		var_a->var8 = -1;
-		var_a->var16 = -1;
+		var_a->var16 = ssavar + 1;
 		var_a->var32 = ssavar + 2;
 		ssavar += 3;
 
@@ -578,13 +579,14 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
-		output_zext(ssavar + 2, 32, ssavar + 1, 8);
+		output_zext(ssavar + 2, 16, ssavar + 1, 8);
+		output_zext(ssavar + 3, 32, ssavar + 1, 8);
 
 		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar + 2;
-		ssavar += 3;
+		var_a->var8 = ssavar + 1;
+		var_a->var16 = ssavar + 2;
+		var_a->var32 = ssavar + 3;
+		ssavar += 4;
 
 		break;
 
