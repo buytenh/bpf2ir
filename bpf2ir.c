@@ -464,71 +464,74 @@ static void start_bb(struct insn_info *info)
 
 static void output_insn(int i, struct insn *in, struct insn_info *info)
 {
+	struct var *var_a = &info->vars[VAR_A];
+	struct var *var_x = &info->vars[VAR_X];
+
 	switch (in->code) {
 	case BPF_LD | BPF_IMM:
-		info->vars[VAR_A].type = TYPE_CONSTANT;
-		info->vars[VAR_A].index = in->k;
+		var_a->type = TYPE_CONSTANT;
+		var_a->index = in->k;
 		break;
 
 	case BPF_LD | BPF_W | BPF_ABS:
 		printf("\t%%%d = tail call i32 @ld32(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_LD | BPF_H | BPF_ABS:
 		printf("\t%%%d = tail call i32 @ld16(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_LD | BPF_B | BPF_ABS:
 		printf("\t%%%d = tail call i32 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %d)\n", ssavar, in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_LD | BPF_W | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i32 @ld32(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar + 1;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar + 1;
 
 		ssavar += 2;
 		break;
 
 	case BPF_LD | BPF_H | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i32 @ld16(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar + 1;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar + 1;
 
 		ssavar += 2;
 		break;
 
 	case BPF_LD | BPF_B | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i32 @ld8(i8* %%pkt, "
 		       "i32 %%len, i32 %%%d)\n", ssavar + 1, ssavar);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar + 1;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar + 1;
 
 		ssavar += 2;
 		break;
@@ -536,26 +539,26 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 	case BPF_LD | BPF_MEM:
 		if (in->k < 0 || in->k >= BPF_MEMWORDS)
 			exit(1);
-		info->vars[VAR_A] = info->vars[VAR_M0 + in->k];
+		*var_a = info->vars[VAR_M0 + in->k];
 		break;
 
 	case BPF_LD | BPF_W | BPF_LEN:
-		info->vars[VAR_A].type = TYPE_LENGTH;
+		var_a->type = TYPE_LENGTH;
 		break;
 
 	case BPF_LDX | BPF_W | BPF_IMM:
-		info->vars[VAR_X].type = TYPE_CONSTANT;
-		info->vars[VAR_X].index = in->k;
+		var_x->type = TYPE_CONSTANT;
+		var_x->index = in->k;
 		break;
 
 	case BPF_LDX | BPF_W | BPF_MEM:
 		if (in->k < 0 || in->k >= BPF_MEMWORDS)
 			exit(1);
-		info->vars[VAR_X] = info->vars[VAR_M0 + in->k];
+		*var_x = info->vars[VAR_M0 + in->k];
 		break;
 
 	case BPF_LDX | BPF_W | BPF_LEN:
-		info->vars[VAR_X].type = TYPE_LENGTH;
+		var_x->type = TYPE_LENGTH;
 		break;
 
 	case BPF_LDX | BPF_B | BPF_MSH:
@@ -565,229 +568,229 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		       ssavar + 1, ssavar);
 		printf("\t%%%d = shl i32 %%%d, 2\n",
 		       ssavar + 2, ssavar + 1);
-		info->vars[VAR_X].type = TYPE_SSAVAR;
-		info->vars[VAR_X].index = ssavar + 2;
+		var_x->type = TYPE_SSAVAR;
+		var_x->index = ssavar + 2;
 		ssavar += 3;
 		break;
 
 	case BPF_ST:
 		if (in->k < 0 || in->k >= BPF_MEMWORDS)
 			exit(1);
-		info->vars[VAR_M0 + in->k] = info->vars[VAR_A];
+		info->vars[VAR_M0 + in->k] = *var_a;
 		break;
 
 	case BPF_STX:
 		if (in->k < 0 || in->k >= BPF_MEMWORDS)
 			exit(1);
-		info->vars[VAR_M0 + in->k] = info->vars[VAR_X];
+		info->vars[VAR_M0 + in->k] = *var_x;
 		break;
 
 	case BPF_ALU | BPF_ADD | BPF_K:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_SUB | BPF_K:
 		printf("\t%%%d = sub i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_MUL | BPF_K:
 		printf("\t%%%d = mul i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_DIV | BPF_K:
 		printf("\t%%%d = udiv i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_OR | BPF_K:
 		printf("\t%%%d = or i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_AND | BPF_K:
 		printf("\t%%%d = and i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_LSH | BPF_K:
 		printf("\t%%%d = shl i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_RSH | BPF_K:
 		printf("\t%%%d = lshr i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_NEG:
 		printf("\t%%%d = sub i32 0, ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_MOD | BPF_K:
 		printf("\t%%%d = urem i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_XOR | BPF_K:
 		printf("\t%%%d = xor i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_ADD | BPF_X:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_SUB | BPF_X:
 		printf("\t%%%d = sub i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_MUL | BPF_X:
 		printf("\t%%%d = mul i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_DIV | BPF_X:
 		printf("\t%%%d = udiv i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_OR | BPF_X:
 		printf("\t%%%d = or i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_AND | BPF_X:
 		printf("\t%%%d = and i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_LSH | BPF_X:
 		printf("\t%%%d = shl i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_RSH | BPF_X:
 		printf("\t%%%d = lshr i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_MOD | BPF_X:
 		printf("\t%%%d = urem i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
 	case BPF_ALU | BPF_XOR | BPF_X:
 		printf("\t%%%d = xor i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
-		info->vars[VAR_A].type = TYPE_SSAVAR;
-		info->vars[VAR_A].index = ssavar;
+		var_a->type = TYPE_SSAVAR;
+		var_a->index = ssavar;
 		ssavar++;
 		break;
 
@@ -797,7 +800,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JEQ | BPF_K:
 		printf("\t%%%d = icmp eq i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -809,7 +812,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JGT | BPF_K:
 		printf("\t%%%d = icmp ugt i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -821,7 +824,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JGE | BPF_K:
 		printf("\t%%%d = icmp uge i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -833,7 +836,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JSET | BPF_K:
 		printf("\t%%%d = and i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
@@ -849,9 +852,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JEQ | BPF_X:
 		printf("\t%%%d = icmp eq i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -863,9 +866,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JGT | BPF_X:
 		printf("\t%%%d = icmp ugt i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -877,9 +880,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JGE | BPF_X:
 		printf("\t%%%d = icmp uge i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
 
 		printf("\tbr i1 %%%d, ", ssavar);
@@ -891,9 +894,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_JMP | BPF_JSET | BPF_X:
 		printf("\t%%%d = and i32 ", ssavar);
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf(", ");
-		output_var(&info->vars[VAR_X]);
+		output_var(var_x);
 		printf("\n");
 
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
@@ -913,16 +916,16 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_RET | BPF_A:
 		printf("\tret i32 ");
-		output_var(&info->vars[VAR_A]);
+		output_var(var_a);
 		printf("\n");
 		break;
 
 	case BPF_MISC | BPF_TAX:
-		info->vars[VAR_X] = info->vars[VAR_A];
+		*var_x = *var_a;
 		break;
 
 	case BPF_MISC | BPF_TXA:
-		info->vars[VAR_A] = info->vars[VAR_X];
+		*var_a = *var_x;
 		break;
 
 	default:
