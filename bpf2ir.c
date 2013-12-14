@@ -391,7 +391,7 @@ static void trace_jumps(void)
 	foreach_jump(jump_log_incoming);
 }
 
-static void output_var_width(struct var *v, int width)
+static void output_var(struct var *v, int width)
 {
 	switch (v->type) {
 	case TYPE_UNDEF:
@@ -432,11 +432,6 @@ static void output_var_width(struct var *v, int width)
 		fprintf(stderr, "invalid var type!\n");
 		exit(1);
 	}
-}
-
-static void output_var(struct var *v)
-{
-	output_var_width(v, 32);
 }
 
 static int k_width(int k)
@@ -492,7 +487,7 @@ static void output_phi(struct insn_info *info, int var, int width)
 		if (i)
 			printf(",");
 		printf(" [ ");
-		output_var_width(&from->vars[var], width);
+		output_var(&from->vars[var], width);
 		printf(", %%b%d ]", from->bb_num);
 	}
 	printf("\n");
@@ -600,7 +595,7 @@ static void output_nwop_k(struct var *a, char *op, int k, int check_k)
 
 	if (width <= 8) {
 		printf("\t%%%d = %s i8 ", ssavar, op);
-		output_var_width(a, 8);
+		output_var(a, 8);
 		printf(", %d\n", k);
 
 		newvar.var8 = ssavar++;
@@ -608,14 +603,14 @@ static void output_nwop_k(struct var *a, char *op, int k, int check_k)
 
 	if (width <= 16) {
 		printf("\t%%%d = %s i16 ", ssavar, op);
-		output_var_width(a, 16);
+		output_var(a, 16);
 		printf(", %d\n", k);
 
 		newvar.var16 = ssavar++;
 	}
 
 	printf("\t%%%d = %s i32 ", ssavar, op);
-	output_var_width(a, 32);
+	output_var(a, 32);
 	printf(", %d\n", k);
 
 	newvar.var32 = ssavar++;
@@ -639,9 +634,9 @@ static void output_nwop_x(struct var *a, char *op, struct var *x)
 
 	if (width <= 8) {
 		printf("\t%%%d = %s i8 ", ssavar, op);
-		output_var_width(a, 8);
+		output_var(a, 8);
 		printf(", ");
-		output_var_width(x, 8);
+		output_var(x, 8);
 		printf("\n");
 
 		newvar.var8 = ssavar++;
@@ -649,18 +644,18 @@ static void output_nwop_x(struct var *a, char *op, struct var *x)
 
 	if (width <= 16) {
 		printf("\t%%%d = %s i16 ", ssavar, op);
-		output_var_width(a, 16);
+		output_var(a, 16);
 		printf(", ");
-		output_var_width(x, 16);
+		output_var(x, 16);
 		printf("\n");
 
 		newvar.var16 = ssavar++;
 	}
 
 	printf("\t%%%d = %s i32 ", ssavar, op);
-	output_var_width(a, 32);
+	output_var(a, 32);
 	printf(", ");
-	output_var_width(x, 32);
+	output_var(x, 32);
 	printf("\n");
 
 	newvar.var32 = ssavar++;
@@ -733,7 +728,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_LD | BPF_W | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i32 @ld32(i8* %%pkt, "
@@ -749,7 +744,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_LD | BPF_H | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i16 @ld16(i8* %%pkt, "
@@ -766,7 +761,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_LD | BPF_B | BPF_IND:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = tail call i8 @ld8(i8* %%pkt, "
@@ -851,7 +846,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_ADD | BPF_K:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", %d\n", in->k);
 
 		var_a->type = TYPE_SSAVAR;
@@ -864,7 +859,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_SUB | BPF_K:
 		printf("\t%%%d = sub i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", %d\n", in->k);
 
 		var_a->type = TYPE_SSAVAR;
@@ -877,7 +872,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_MUL | BPF_K:
 		printf("\t%%%d = mul i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", %d\n", in->k);
 
 		var_a->type = TYPE_SSAVAR;
@@ -902,7 +897,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_LSH | BPF_K:
 		printf("\t%%%d = shl i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", %d\n", in->k);
 
 		var_a->type = TYPE_SSAVAR;
@@ -919,7 +914,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_NEG:
 		printf("\t%%%d = sub i32 0, ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf("\n");
 
 		var_a->type = TYPE_SSAVAR;
@@ -940,9 +935,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_ADD | BPF_X:
 		printf("\t%%%d = add i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", ");
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf("\n");
 
 		var_a->type = TYPE_SSAVAR;
@@ -955,9 +950,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_SUB | BPF_X:
 		printf("\t%%%d = sub i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", ");
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf("\n");
 
 		var_a->type = TYPE_SSAVAR;
@@ -970,9 +965,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_MUL | BPF_X:
 		printf("\t%%%d = mul i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", ");
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf("\n");
 
 		var_a->type = TYPE_SSAVAR;
@@ -997,9 +992,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_ALU | BPF_LSH | BPF_X:
 		printf("\t%%%d = shl i32 ", ssavar);
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf(", ");
-		output_var(var_x);
+		output_var(var_x, 32);
 		printf("\n");
 
 		var_a->type = TYPE_SSAVAR;
@@ -1034,7 +1029,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		}
 
 		printf("\t%%%d = icmp eq i%d ", ssavar, var_width(var_a));
-		output_var_width(var_a, var_width(var_a));
+		output_var(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1051,7 +1046,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		}
 
 		printf("\t%%%d = icmp ugt i%d ", ssavar, var_width(var_a));
-		output_var_width(var_a, var_width(var_a));
+		output_var(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1068,7 +1063,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		}
 
 		printf("\t%%%d = icmp uge i%d ", ssavar, var_width(var_a));
-		output_var_width(var_a, var_width(var_a));
+		output_var(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1086,7 +1081,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		}
 
 		printf("\t%%%d = and i%d ", ssavar, var_width(var_a));
-		output_var_width(var_a, var_width(var_a));
+		output_var(var_a, var_width(var_a));
 		printf(", %d\n", in->k);
 
 		printf("\t%%%d = icmp ne i%d %%%d, 0\n",
@@ -1104,9 +1099,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 			temp = var_width(var_x);
 
 		printf("\t%%%d = icmp eq i%d ", ssavar, temp);
-		output_var_width(var_a, temp);
+		output_var(var_a, temp);
 		printf(", ");
-		output_var_width(var_x, temp);
+		output_var(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1121,9 +1116,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 			temp = var_width(var_x);
 
 		printf("\t%%%d = icmp ugt i%d ", ssavar, temp);
-		output_var_width(var_a, temp);
+		output_var(var_a, temp);
 		printf(", ");
-		output_var_width(var_x, temp);
+		output_var(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1138,9 +1133,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 			temp = var_width(var_x);
 
 		printf("\t%%%d = icmp uge i%d ", ssavar, temp);
-		output_var_width(var_a, temp);
+		output_var(var_a, temp);
 		printf(", ");
-		output_var_width(var_x, temp);
+		output_var(var_x, temp);
 		printf("\n");
 
 		output_br_cond(ssavar, i, in->jt, in->jf);
@@ -1155,9 +1150,9 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 			temp = var_width(var_x);
 
 		printf("\t%%%d = and i%d ", ssavar, temp);
-		output_var_width(var_a, temp);
+		output_var(var_a, temp);
 		printf(", ");
-		output_var_width(var_x, temp);
+		output_var(var_x, temp);
 		printf("\n");
 
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
@@ -1175,7 +1170,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 
 	case BPF_RET | BPF_A:
 		printf("\tret i32 ");
-		output_var(var_a);
+		output_var(var_a, 32);
 		printf("\n");
 		break;
 
