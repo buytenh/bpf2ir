@@ -439,6 +439,17 @@ static void output_var(struct var *v)
 	output_var_width(v, 32);
 }
 
+static int k_width(int k)
+{
+	if (k & 0xffff0000)
+		return 32;
+
+	if (k & 0xff00)
+		return 16;
+
+	return 8;
+}
+
 static int var_width(struct var *v)
 {
 	switch (v->type) {
@@ -446,11 +457,7 @@ static int var_width(struct var *v)
 		return -1;
 
 	case TYPE_CONSTANT:
-		if (v->k & 0xffff0000)
-			return 32;
-		if (v->k & 0xff00)
-			return 16;
-		return 8;
+		return k_width(v->k);
 
 	case TYPE_LENGTH:
 		return 32;
@@ -575,6 +582,45 @@ static void start_bb(struct insn_info *info)
 
 	if (nl)
 		printf("\n");
+}
+
+static void output_nwop_k(struct var *a, char *op, int k, int check_k)
+{
+	struct var newvar;
+	int width;
+
+	newvar.type = TYPE_SSAVAR;
+	newvar.var8 = -1;
+	newvar.var16 = -1;
+	newvar.var32 = -1;
+
+	width = var_width(a);
+	if (check_k && width < k_width(k))
+		width = k_width(k);
+
+	if (width <= 8) {
+		printf("\t%%%d = %s i8 ", ssavar, op);
+		output_var_width(a, 8);
+		printf(", %d\n", k);
+
+		newvar.var8 = ssavar++;
+	}
+
+	if (width <= 16) {
+		printf("\t%%%d = %s i16 ", ssavar, op);
+		output_var_width(a, 16);
+		printf(", %d\n", k);
+
+		newvar.var16 = ssavar++;
+	}
+
+	printf("\t%%%d = %s i32 ", ssavar, op);
+	output_var_width(a, 32);
+	printf(", %d\n", k);
+
+	newvar.var32 = ssavar++;
+
+	*a = newvar;
 }
 
 static void output_br(int from, int rel)
@@ -798,42 +844,15 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_DIV | BPF_K:
-		printf("\t%%%d = udiv i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "udiv", in->k, 0);
 		break;
 
 	case BPF_ALU | BPF_OR | BPF_K:
-		printf("\t%%%d = or i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "or", in->k, 1);
 		break;
 
 	case BPF_ALU | BPF_AND | BPF_K:
-		printf("\t%%%d = and i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "and", in->k, 1);
 		break;
 
 	case BPF_ALU | BPF_LSH | BPF_K:
@@ -850,16 +869,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_RSH | BPF_K:
-		printf("\t%%%d = lshr i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "lshr", in->k, 0);
 		break;
 
 	case BPF_ALU | BPF_NEG:
@@ -876,29 +886,11 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_MOD | BPF_K:
-		printf("\t%%%d = urem i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "urem", in->k, 0);
 		break;
 
 	case BPF_ALU | BPF_XOR | BPF_K:
-		printf("\t%%%d = xor i32 ", ssavar);
-		output_var(var_a);
-		printf(", %d\n", in->k);
-
-		var_a->type = TYPE_SSAVAR;
-		var_a->var8 = -1;
-		var_a->var16 = -1;
-		var_a->var32 = ssavar;
-		ssavar++;
-
+		output_nwop_k(var_a, "xor", in->k, 1);
 		break;
 
 	case BPF_ALU | BPF_ADD | BPF_X:
