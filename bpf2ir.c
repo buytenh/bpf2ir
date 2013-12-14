@@ -577,6 +577,18 @@ static void start_bb(struct insn_info *info)
 		printf("\n");
 }
 
+static void output_br(int from, int rel)
+{
+	printf("\tbr label %%b%d\n", pinfo[from + rel + 1].bb_num);
+}
+
+static void output_br_cond(int cond, int from, int jt, int jf)
+{
+	printf("\tbr i1 %%%d, ", cond);
+	printf("label %%b%d, ", pinfo[from + jt + 1].bb_num);
+	printf("label %%b%d\n", pinfo[from + jf + 1].bb_num);
+}
+
 static void output_insn(int i, struct insn *in, struct insn_info *info)
 {
 	struct var *var_a = &info->vars[VAR_A];
@@ -1034,7 +1046,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_JMP | BPF_JA:
-		printf("\tbr label %%b%d\n", pinfo[i + 1 + in->k].bb_num);
+		output_br(i, in->k);
 		break;
 
 	case BPF_JMP | BPF_JEQ | BPF_K:
@@ -1042,11 +1054,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_K:
@@ -1054,11 +1065,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_K:
@@ -1066,11 +1076,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_a);
 		printf(", %d\n", in->k);
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_K:
@@ -1081,9 +1090,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
 		       ssavar + 1, ssavar);
 
-		printf("\tbr i1 %%%d, ", ssavar + 1);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar + 1, i, in->jt, in->jf);
 
 		ssavar += 2;
 
@@ -1096,11 +1103,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JGT | BPF_X:
@@ -1110,11 +1116,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JGE | BPF_X:
@@ -1124,11 +1129,10 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		output_var(var_x);
 		printf("\n");
 
-		printf("\tbr i1 %%%d, ", ssavar);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar, i, in->jt, in->jf);
 
 		ssavar++;
+
 		break;
 
 	case BPF_JMP | BPF_JSET | BPF_X:
@@ -1141,9 +1145,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		printf("\t%%%d = icmp ne i32 %%%d, 0\n",
 		       ssavar + 1, ssavar);
 
-		printf("\tbr i1 %%%d, ", ssavar + 1);
-		printf("label %%b%d, ", pinfo[i + 1 + in->jt].bb_num);
-		printf("label %%b%d\n", pinfo[i + 1 + in->jf].bb_num);
+		output_br_cond(ssavar + 1, i, in->jt, in->jf);
 
 		ssavar += 2;
 
