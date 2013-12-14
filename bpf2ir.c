@@ -1,10 +1,3 @@
-/*
- * TBD:
- * - verify that all opcodes are translated correctly
- * - 8/16/32 bit ssa value tracking
- * - minimise zero extension in generated assembly
- */
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
