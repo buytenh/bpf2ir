@@ -253,11 +253,9 @@ static void print_insn(int i, struct insn *in)
 }
 
 
-#define N	65536
-
 static int insns;
-static struct insn prog[N];
-static struct insn_info pinfo[N];
+static struct insn prog[BPF_MAXINSNS];
+static struct insn_info pinfo[BPF_MAXINSNS];
 static int ssavar;
 
 static void print_insns(void)
