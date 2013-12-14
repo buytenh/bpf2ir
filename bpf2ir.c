@@ -335,26 +335,20 @@ static void assign_basic_blocks(void)
 	}
 }
 
-static void jump_log_incoming(int from, int rel)
+static void jump_log_incoming(int from, int to)
 {
-	int to = from + rel + 1;
+	struct insn_info *info = &pinfo[to];
+	int i;
 
-	if (to < insns) {
-		struct insn_info *info = &pinfo[to];
-		int i;
-
-		for (i = 0; i < info->bb_incoming; i++) {
-			if (info->in[i] == -1) {
-				info->in[i] = from;
-				break;
-			}
-		}
-
-		if (i == info->bb_incoming) {
-			printf("error!\n");
-			exit(1);
+	for (i = 0; i < info->bb_incoming; i++) {
+		if (info->in[i] == -1) {
+			info->in[i] = from;
+			return;
 		}
 	}
+
+	printf("error!\n");
+	exit(1);
 }
 
 static void trace_jumps(void)
@@ -383,27 +377,7 @@ static void trace_jumps(void)
 		}
 	}
 
-	for (i = 0; i < insns; i++) {
-		struct insn *in = &prog[i];
-
-		switch (in->code) {
-		case BPF_JMP | BPF_JA:
-			jump_log_incoming(i, in->k);
-			break;
-
-		case BPF_JMP | BPF_JEQ | BPF_K:
-		case BPF_JMP | BPF_JGT | BPF_K:
-		case BPF_JMP | BPF_JGE | BPF_K:
-		case BPF_JMP | BPF_JSET | BPF_K:
-		case BPF_JMP | BPF_JEQ | BPF_X:
-		case BPF_JMP | BPF_JGT | BPF_X:
-		case BPF_JMP | BPF_JGE | BPF_X:
-		case BPF_JMP | BPF_JSET | BPF_X:
-			jump_log_incoming(i, in->jt);
-			jump_log_incoming(i, in->jf);
-			break;
-		}
-	}
+	foreach_jump(jump_log_incoming);
 }
 
 static void output_var(struct var *v)
