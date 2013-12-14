@@ -391,7 +391,7 @@ static void trace_jumps(void)
 	foreach_jump(jump_log_incoming);
 }
 
-static void output_var(struct var *v)
+static void output_var_width(struct var *v, int width)
 {
 	switch (v->type) {
 	case TYPE_UNDEF:
@@ -403,12 +403,64 @@ static void output_var(struct var *v)
 		break;
 
 	case TYPE_LENGTH:
+		if (width != 32) {
+			fprintf(stderr, "pktlen output with wrong type\n");
+			exit(1);
+		}
 		printf("%%len");
 		break;
 
 	case TYPE_SSAVAR:
-		printf("%%%d", v->var32);
+		if (width == 8) {
+			if (v->var8 == -1) {
+				fprintf(stderr, "missing 8 bit ssa var\n");
+				exit(1);
+			}
+			printf("%%%d", v->var8);
+		} else if (width == 16) {
+			if (v->var16 == -1) {
+				fprintf(stderr, "missing 16 bit ssa var\n");
+				exit(1);
+			}
+			printf("%%%d", v->var16);
+		} else {
+			printf("%%%d", v->var32);
+		}
 		break;
+
+	default:
+		fprintf(stderr, "invalid var type!\n");
+		exit(1);
+	}
+}
+
+static void output_var(struct var *v)
+{
+	output_var_width(v, 32);
+}
+
+static int var_width(struct var *v)
+{
+	switch (v->type) {
+	case TYPE_UNDEF:
+		return -1;
+
+	case TYPE_CONSTANT:
+		if (v->k & 0xffff0000)
+			return 32;
+		if (v->k & 0xff00)
+			return 16;
+		return 8;
+
+	case TYPE_LENGTH:
+		return 32;
+
+	case TYPE_SSAVAR:
+		if (v->var8 != -1)
+			return 8;
+		if (v->var16 != -1)
+			return 16;
+		return 32;
 
 	default:
 		fprintf(stderr, "invalid var type!\n");
@@ -422,10 +474,30 @@ static void output_zext(int tovar, int towidth, int fromvar, int fromwidth)
 	       tovar, fromwidth, fromvar, towidth);
 }
 
-static int output_phi(struct insn_info *info, int var)
+static void output_phi(struct insn_info *info, int var, int width)
+{
+	int i;
+
+	printf("\t%%%d = phi i%d", ssavar, width);
+	for (i = 0; i < info->bb_incoming; i++) {
+		struct insn_info *from = &pinfo[info->in[i]];
+
+		if (i)
+			printf(",");
+		printf(" [ ");
+		output_var_width(&from->vars[var], width);
+		printf(", %%b%d ]", from->bb_num);
+	}
+	printf("\n");
+
+	ssavar++;
+}
+
+static int compute_phi(struct insn_info *info, int var)
 {
 	struct var *fa = &pinfo[info->in[0]].vars[var];
 	int i;
+	int maxwidth;
 
 	for (i = 1; i < info->bb_incoming; i++) {
 		struct var *fb = &pinfo[info->in[i]].vars[var];
@@ -447,24 +519,40 @@ static int output_phi(struct insn_info *info, int var)
 		return 0;
 	}
 
-	info->vars[var].type = TYPE_SSAVAR;
-	info->vars[var].var8 = -1;
-	info->vars[var].var16 = -1;
-	info->vars[var].var32 = ssavar;
+	maxwidth = var_width(fa);
 
-	printf("\t%%%d = phi i32", ssavar);
-	for (i = 0; i < info->bb_incoming; i++) {
-		struct insn_info *from = &pinfo[info->in[i]];
+	for (i = 1; i < info->bb_incoming; i++) {
+		struct var *fb = &pinfo[info->in[i]].vars[var];
+		int width;
 
-		if (i)
-			printf(",");
-		printf(" [ ");
-		output_var(&from->vars[var]);
-		printf(", %%b%d ]", from->bb_num);
+		width = var_width(fb);
+		if (width > maxwidth)
+			maxwidth = width;
 	}
-	printf("\n");
 
-	ssavar++;
+	if (maxwidth == -1) {
+		info->vars[var].type = TYPE_UNDEF;
+		return 0;
+	}
+
+	info->vars[var].type = TYPE_SSAVAR;
+
+	if (maxwidth <= 8) {
+		info->vars[var].var8 = ssavar;
+		output_phi(info, var, 8);
+	} else {
+		info->vars[var].var8 = -1;
+	}
+
+	if (maxwidth <= 16) {
+		info->vars[var].var16 = ssavar;
+		output_phi(info, var, 16);
+	} else {
+		info->vars[var].var16 = -1;
+	}
+
+	info->vars[var].var32 = ssavar;
+	output_phi(info, var, 32);
 
 	return 1;
 }
@@ -483,7 +571,7 @@ static void start_bb(struct insn_info *info)
 
 	nl = 0;
 	for (i = 0; i < VAR_COUNT; i++)
-		nl += output_phi(info, i);
+		nl += compute_phi(info, i);
 
 	if (nl)
 		printf("\n");
