@@ -903,6 +903,11 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_DIV | BPF_K:
+		if (in->k == 0) {
+			fprintf(stderr, "division by zero\n");
+			exit(1);
+		}
+
 		output_nwop_k(var_a, "udiv", in->k, 0);
 		break;
 
@@ -945,6 +950,11 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_MOD | BPF_K:
+		if (in->k == 0) {
+			fprintf(stderr, "division by zero\n");
+			exit(1);
+		}
+
 		output_nwop_k(var_a, "urem", in->k, 0);
 		break;
 
@@ -998,6 +1008,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_DIV | BPF_X:
+		// @@@ check X against zero
 		output_nwop_x(var_a, "udiv", var_x);
 		break;
 
@@ -1029,6 +1040,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_MOD | BPF_X:
+		// @@@ check X against zero
 		output_nwop_x(var_a, "urem", var_x);
 		break;
 
