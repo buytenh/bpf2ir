@@ -885,7 +885,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 		break;
 
 	case BPF_ALU | BPF_AND | BPF_K:
-		output_nwop_k(var_a, "and", in->k, 1);
+		output_nwop_k(var_a, "and", in->k, 0);
 		break;
 
 	case BPF_ALU | BPF_LSH | BPF_K:
