@@ -269,9 +269,17 @@ static void print_insns(void)
 	printf("\n");
 }
 
-static void for_jump(int from, int rel, void (*cb)(int from, int to))
+static void for_jump(int from, uint32_t rel, void (*cb)(int from, int to))
 {
-	int to = from + rel + 1;
+	int to;
+
+	if (rel >= BPF_MAXINSNS) {
+		fprintf(stderr, "jump from %d to +%d, while max %d words\n",
+			from, rel, BPF_MAXINSNS);
+		exit(1);
+	}
+
+	to = from + rel + 1;
 
 	if (to >= insns) {
 		fprintf(stderr, "jump from %d to %d, while only %d insns\n",
@@ -656,13 +664,31 @@ static void output_nwop_x(struct var *a, char *op, struct var *x)
 	*a = newvar;
 }
 
-static void output_br(int from, int rel)
+static void output_br(int from, uint32_t rel)
 {
+	if (rel >= BPF_MAXINSNS) {
+		fprintf(stderr, "jump from %d to +%d, while max %d words\n",
+			from, rel, BPF_MAXINSNS);
+		exit(1);
+	}
+
 	printf("\tbr label %%b%d\n", pinfo[from + rel + 1].bb_num);
 }
 
-static void output_br_cond(int cond, int from, int jt, int jf)
+static void output_br_cond(int cond, int from, uint32_t jt, uint32_t jf)
 {
+	if (jt >= BPF_MAXINSNS) {
+		fprintf(stderr, "jump from %d to +%d, while max %d words\n",
+			from, jt, BPF_MAXINSNS);
+		exit(1);
+	}
+
+	if (jf >= BPF_MAXINSNS) {
+		fprintf(stderr, "jump from %d to +%d, while max %d words\n",
+			from, jf, BPF_MAXINSNS);
+		exit(1);
+	}
+
 	printf("\tbr i1 %%%d, ", cond);
 	printf("label %%b%d, ", pinfo[from + jt + 1].bb_num);
 	printf("label %%b%d\n", pinfo[from + jf + 1].bb_num);
