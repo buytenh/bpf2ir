@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-extern inline uint32_t ld8(const void *pkt, int len, int off)
+extern inline uint8_t ld8(const void *pkt, int len, int off)
 {
 	if (off + 1 <= len) {
 		const uint8_t *p = ((const uint8_t *)pkt) + off;
@@ -15,7 +15,7 @@ extern inline uint32_t ld8(const void *pkt, int len, int off)
 	return 0xff;
 }
 
-extern inline uint32_t ld16(const void *pkt, int len, int off)
+extern inline uint16_t ld16(const void *pkt, int len, int off)
 {
 	if (off + 2 <= len) {
 		const uint8_t *p = ((const uint8_t *)pkt) + off;
