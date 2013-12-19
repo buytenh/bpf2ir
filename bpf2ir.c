@@ -1222,6 +1222,7 @@ static void output_insn(int i, struct insn *in, struct insn_info *info)
 static void output(void)
 {
 	int i;
+	int isret;
 
 	printf("declare i8 @ld8(i8* nocapture, i32, i32)\n");
 	printf("\n");
@@ -1238,6 +1239,7 @@ static void output(void)
 
 	printf("b1:\n");
 
+	isret = 0;
 	for (i = 0; i < insns; i++) {
 		struct insn *in = &prog[i];
 		struct insn_info *info = &pinfo[i];
@@ -1255,6 +1257,18 @@ static void output(void)
 		print_insn(i, in);
 
 		output_insn(i, in, info);
+
+		if (in->code == (BPF_RET | BPF_K) ||
+		    in->code == (BPF_RET | BPF_A)) {
+			isret = 1;
+		} else {
+			isret = 0;
+		}
+	}
+
+	if (!isret) {
+		fprintf(stderr, "last insn is not a return insn\n");
+		exit(1);
 	}
 
 	printf("}\n");
